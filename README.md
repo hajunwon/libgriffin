@@ -173,7 +173,7 @@ tools/
 
 ## Dependencies
 
-- **libpefix** — PE parsing, x86-64 decoder, abstract interpreter
+- **[libpefix](https://github.com/hajunwon/libpefix)** — PE parsing, x86-64 decoder, abstract interpreter
 
 ## License
 
