@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B2C3D4E5-2222-3333-4444-555566667777}</ProjectGuid>
+    <RootNamespace>libgriffin</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(ProjectDir)build\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)build\$(Configuration)\obj\</IntDir>
+    <TargetName>libgriffin</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)..\libpefix\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libpefix\src\pe.cpp" />
+    <ClCompile Include="..\libpefix\src\sections.cpp" />
+    <ClCompile Include="..\libpefix\src\xrefs.cpp" />
+    <ClCompile Include="..\libpefix\src\exports.cpp" />
+    <ClCompile Include="..\libpefix\src\coffsyms.cpp" />
+    <ClCompile Include="..\libpefix\src\x86_64\disasm.cpp" />
+    <ClCompile Include="..\libpefix\src\x86_64\emu.cpp" />
+    <ClCompile Include="..\libpefix\src\x86_64\trace.cpp" />
+    <ClCompile Include="..\libpefix\src\analysis.cpp" />
+    <ClCompile Include="src\dispatch.cpp" />
+    <ClCompile Include="src\int3.cpp" />
+    <ClCompile Include="src\jmpres.cpp" />
+    <ClCompile Include="src\mba.cpp" />
+    <ClCompile Include="src\patch.cpp" />
+    <ClCompile Include="src\output.cpp" />
+    <ClCompile Include="tools\libgriffin.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\griffin\griffin.h" />
+    <ClInclude Include="include\griffin\dispatch.h" />
+    <ClInclude Include="include\griffin\int3.h" />
+    <ClInclude Include="include\griffin\jmpres.h" />
+    <ClInclude Include="include\griffin\mba.h" />
+    <ClInclude Include="include\griffin\patch.h" />
+    <ClInclude Include="include\griffin\output.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "Win64",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/../libpefix/include",
+                "${workspaceFolder}/deps/libpefix/include"
+            ],
+            "defines": ["_WIN64", "WIN32_LEAN_AND_MEAN", "NOMINMAX", "NDEBUG"],
+            "windowsSdkVersion": "10.0",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64"
+        }
+    ],
+    "version": 4
+}

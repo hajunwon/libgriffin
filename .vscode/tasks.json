@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Release",
+            "type": "shell",
+            "command": "${workspaceFolder}/build.bat",
+            "group": {"kind": "build", "isDefault": true},
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
