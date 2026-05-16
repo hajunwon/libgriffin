@@ -1,3 +1,3 @@
 ﻿[submodule "deps/libpefix"]
 	path = deps/libpefix
-	url = https://github.com/USER/libpefix.git
+	url = https://github.com/hajunwon/libpefix.git
