@@ -39,6 +39,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\libpefix\src\log.cpp">
+      <ObjectFileName>$(IntDir)pefix_log.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libpefix\src\pe.cpp" />
     <ClCompile Include="..\libpefix\src\sections.cpp" />
     <ClCompile Include="..\libpefix\src\xrefs.cpp" />
@@ -48,6 +51,7 @@
     <ClCompile Include="..\libpefix\src\x86_64\emu.cpp" />
     <ClCompile Include="..\libpefix\src\x86_64\trace.cpp" />
     <ClCompile Include="..\libpefix\src\analysis.cpp" />
+    <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\dispatch.cpp" />
     <ClCompile Include="src\int3.cpp" />
     <ClCompile Include="src\jmpres.cpp" />

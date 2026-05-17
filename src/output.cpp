@@ -1,4 +1,5 @@
 #include <griffin/output.h>
+#include <griffin/log.h>
 #include <cstring>
 
 namespace griffin {
@@ -90,7 +91,7 @@ void Output::emitText(const char* path, const Func& func, uint64_t imageBase) {
     FILE* f = stdout;
     if (path) {
         fopen_s(&f, path, "w");
-        if (!f) { fprintf(stderr, "[!] Cannot open %s\n", path); return; }
+        if (!f) { log::fail("Cannot open %s", path); return; }
     }
 
     fprintf(f, "=== Deobfuscated: 0x%llX ===\n", (unsigned long long)func.entryAddr);
@@ -153,7 +154,7 @@ void Output::emitIDC(const char* path, const Func& func, uint64_t imageBase) {
     fprintf(f, "    msg(\"Annotations applied\\n\");\n");
     fprintf(f, "}\n");
     fclose(f);
-    printf("[+] IDC annotations written: %s\n", path);
+    log::ok("IDC annotations written: %s", path);
 }
 
 } // namespace griffin

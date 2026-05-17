@@ -7,7 +7,26 @@
 #include <vector>
 
 #include <pefix/pefix.h>
+#include <pefix/log.h>
 #include <griffin/griffin.h>
+#include <griffin/log.h>
+
+static void cli_sink(int level, const char* msg) {
+    char buf[8192];
+    size_t n = strlen(msg);
+    if (n >= sizeof(buf)) n = sizeof(buf) - 1;
+    memcpy(buf, msg, n);
+    buf[n] = 0;
+    while (n && buf[n - 1] == '\n') buf[--n] = 0;
+    switch (level) {
+        case 0: cli::ok("%s", buf);     break;
+        case 1: cli::fail("%s", buf);   break;
+        case 2: cli::warn("%s", buf);   break;
+        case 3: cli::info("%s", buf);   break;
+        case 4: cli::detail("%s", buf); break;
+        default: fputs(buf, stdout); fputc('\n', stdout); break;
+    }
+}
 
 static void printUsage(const char* exe) {
     printf("griffin -- PE deobfuscation tool (INT3 + JMP flatten + MBA simplify)\n\n");
@@ -32,6 +51,8 @@ static std::string makeOutputName(const char* input) {
 }
 
 int main(int argc, char* argv[]) {
+    pefix::log::set_sink(cli_sink);
+    griffin::log::set_sink(cli_sink);
     if (argc < 2) {
         printUsage(argv[0]);
         return 1;
