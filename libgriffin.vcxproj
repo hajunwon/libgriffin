@@ -54,6 +54,7 @@
     <ClCompile Include="src\mba.cpp" />
     <ClCompile Include="src\patch.cpp" />
     <ClCompile Include="src\output.cpp" />
+    <ClCompile Include="src\xref_trace.cpp" />
     <ClCompile Include="tools\libgriffin.cpp" />
   </ItemGroup>
   <ItemGroup>

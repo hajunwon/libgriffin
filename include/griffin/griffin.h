@@ -19,3 +19,4 @@ namespace griffin {
 #include <griffin/mba.h>
 #include <griffin/patch.h>
 #include <griffin/output.h>
+#include <griffin/xref_trace.h>

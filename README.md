@@ -16,6 +16,7 @@ Deobfuscation toolkit for binaries protected by the "Griffin" obfuscation engine
 - **Inline INT3 NOP** — detect CC runs as inline constant data, convert to NOP
 - **Nullsub patching** — remove dead code patterns in obfuscated sections
 - **Binary patching** — apply all resolved results directly to the PE
+- **Layered xref trace** — reachability from `.grfn1` / PE exports / function pointer tables, with caller attribution per target
 
 ## Setup
 

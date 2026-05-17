@@ -60,6 +60,30 @@ flowchart TD
     F --> C
 ```
 
+## Layered xref reachability
+
+```mermaid
+flowchart TD
+    A[Build XrefGraphCtx] --> B[funcRdata: text fn -> .rdata refs]
+    B --> C[callGraph: text -> text via E8/E9]
+    C --> D[Vtable expansion:<br/>add slot fns as callees of any fn<br/>that LEAs the vtable]
+    D --> E[Transitive propagation<br/>up to maxDepth]
+    E --> F[Layer 1: .grfn1 root]
+    E --> G[Layer 2: PE export root]
+    E --> H[Layer 3: function pointer root]
+
+    F --> J[.grfn1 caller -> .text target -> reachable rdata]
+    G --> K[export entry as root -> reachable rdata]
+    H --> L[.data/.rdata fn ptr -> reachable rdata]
+
+    J --> M[XrefResult.xrefs with layer tag]
+    K --> M
+    L --> M
+
+    M --> N[expandSubstringTargets:<br/>'pkg.Msg.field' container reachable<br/>=> every '.'-delimited suffix reachable]
+    N --> O[Final XrefResult]
+```
+
 ## Inline INT3 NOP detection
 
 ```mermaid
