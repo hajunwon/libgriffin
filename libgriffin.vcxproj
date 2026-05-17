@@ -42,6 +42,7 @@
     <ClCompile Include="..\libpefix\src\log.cpp">
       <ObjectFileName>$(IntDir)pefix_log.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libpefix\src\constprop.cpp" />
     <ClCompile Include="..\libpefix\src\pe.cpp" />
     <ClCompile Include="..\libpefix\src\sections.cpp" />
     <ClCompile Include="..\libpefix\src\xrefs.cpp" />
