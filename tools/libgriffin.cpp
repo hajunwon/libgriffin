@@ -116,6 +116,16 @@ int main(int argc, char* argv[]) {
         cli::info("MBA simplification (per-function, requires CFG)");
     }
 
+    {
+        auto xr = griffin::resolveGriffinXrefs(pe, imageBase, 3);
+        if (!xr.xrefs.empty())
+            cli::ok("Griffin xrefs: %zu resolved, %u unique .rdata targets",
+                    xr.xrefs.size(), xr.uniqueTargets);
+        if (verbose)
+            for (auto& x : xr.xrefs)
+                cli::detail("0x%X -> 0x%X", x.instrRVA, x.targetRVA);
+    }
+
     if (dryRun) {
         cli::info("Dry run -- no output written");
     } else {
