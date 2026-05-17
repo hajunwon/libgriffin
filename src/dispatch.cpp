@@ -390,8 +390,15 @@ DispatchKeyResult DispatchExtractor::extractFromConstraints(Func& func) {
     return result;
 }
 
-static void collectImulPatterns(const Func& func,
-                                 std::map<uint16_t, std::set<uint32_t>>& regConsts) {
+struct ImulInfo {
+    uint16_t srcReg;
+    uint32_t constant;
+    uint32_t rva;
+};
+
+static void collectImulPatterns(const Func& func, uint64_t imageBase,
+                                 std::map<uint16_t, std::set<uint32_t>>& regConsts,
+                                 std::vector<ImulInfo>& allImuls) {
     for (auto& blk : func.blocks) {
         for (auto& instr : blk.instrs) {
             if (instr.dead) continue;
@@ -402,6 +409,8 @@ static void collectImulPatterns(const Func& func,
             uint32_t c = (uint32_t)(uint64_t)instr.src2.imm;
             if (c == 0 || c == 1) continue;
             regConsts[srcReg].insert(c);
+            uint32_t rva = instr.addr ? (uint32_t)(instr.addr - imageBase) : 0;
+            allImuls.push_back({srcReg, c, rva});
         }
     }
 }
@@ -411,7 +420,8 @@ MultiKeyResult DispatchExtractor::extractAllKeys(Func& func) {
     result.imulTotal = 0;
 
     std::map<uint16_t, std::set<uint32_t>> regConsts;
-    collectImulPatterns(func, regConsts);
+    std::vector<ImulInfo> allImuls;
+    collectImulPatterns(func, imageBase_, regConsts, allImuls);
 
     for (auto& [reg, consts] : regConsts) {
         result.imulTotal += (int)consts.size();
@@ -432,6 +442,13 @@ MultiKeyResult DispatchExtractor::extractAllKeys(Func& func) {
             DispatchKey dk;
             dk.reg = (Reg)reg;
             dk.value = key;
+            dk.imulConsts.assign(consts.begin(), consts.end());
+            for (auto& im : allImuls) {
+                if (im.srcReg == reg && im.rva != 0) {
+                    dk.firstImulRVA = im.rva;
+                    break;
+                }
+            }
             result.keys.push_back(dk);
         }
     }
