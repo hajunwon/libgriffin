@@ -248,7 +248,7 @@ InlineInt3Stats nopInlineInt3(PEFile& pe, SectionFilter filter) {
         uint32_t rawSz = pe.sections[si].SizeOfRawData;
         if (rawOff + rawSz > pe.data.size()) rawSz = (uint32_t)(pe.data.size() - rawOff);
 
-        // Pass 1: chain detection — 2+ CC runs with short code gaps between them
+        // Pass 1: chain detection  - 2+ CC runs with short code gaps between them
         for (uint32_t p = 1; p + 8 < rawSz; p++) {
             if (pe.data[rawOff+p] != 0xCC) continue;
             if (pe.data[rawOff+p-1] == 0xCC) continue;

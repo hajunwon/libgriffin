@@ -313,7 +313,7 @@ void extendWithFbrRoots(XrefResult& result, const PEFile& pe, uint64_t imageBase
     };
 
     // Functions already covered by L1/L2/L3 (mapped via the existing root
-    // paths). instrRVA in result.xrefs is a *call site*, not a function start —
+    // paths). instrRVA in result.xrefs is a *call site*, not a function start  - 
     // map it back to the owning function via ctx.findFunc so we can compare
     // against FBR's startRVA list. Anything already represented here is
     // skipped so FBR only contributes net-new roots.
@@ -322,7 +322,7 @@ void extendWithFbrRoots(XrefResult& result, const PEFile& pe, uint64_t imageBase
     for (auto& xr : result.xrefs)
         knownRootFuncs.insert(ctx.findFunc(xr.instrRVA));
 
-    // Existing targets — don't re-register the same target under FBR layer if
+    // Existing targets  - don't re-register the same target under FBR layer if
     // some earlier root already reached it.
     std::unordered_set<uint32_t> knownTargets;
     knownTargets.reserve(result.uniqueTargets);
@@ -355,7 +355,7 @@ void extendWithFbrRoots(XrefResult& result, const PEFile& pe, uint64_t imageBase
 
     // .grfn1 FBR functions: ctx.reachable doesn't index them (it's built from
     // .text-only func boundaries), so use direct LEA refs inside each FBR
-    // function's [startRVA, endRVA) range. No transitive propagation —
+    // function's [startRVA, endRVA) range. No transitive propagation  - 
     // direct .rdata targets only, which keeps the contribution local and
     // avoids the BFS-depth fragmentation that broke the earlier integration.
     for (auto& fb : fbr.functions) {

@@ -69,7 +69,7 @@ void expandSubstringTargets(XrefResult& result, const pefix::PEFile& pe,
 // targets reachable from them as XrefLayerFbr entries. Existing entries are
 // not modified. Safe to call without other extensions.
 //
-// strictOnly: when true, only "strong" FBR boundaries are used — those
+// strictOnly: when true, only "strong" FBR boundaries are used  - those
 // confirmed by pdata / export / RTTI / EH handler tables, or seen by >= 2
 // independent sources. False (default) keeps the wider net.
 void extendWithFbrRoots(XrefResult& result, const pefix::PEFile& pe,
