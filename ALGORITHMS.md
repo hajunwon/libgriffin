@@ -80,9 +80,35 @@ flowchart TD
     K --> M
     L --> M
 
-    M --> N[expandSubstringTargets:<br/>'pkg.Msg.field' container reachable<br/>=> every '.'-delimited suffix reachable]
+    M --> L4Block
+
+    subgraph L4Block[Layer 4: FBR roots, append-only]
+        L4A[pefix::discoverFunctionBoundaries] --> L4B[Drop FBR funcs whose start RVA<br/>maps to a function already used as<br/>an L1/L2/L3 root via ctx.findFunc]
+        L4B --> L4C{Section?}
+        L4C -->|.text| L4D[Use ctx.reachable for the FBR start RVA;<br/>register .rdata targets not in knownTargets]
+        L4C -->|.grfn1| L4E[No ctx.reachable entry: scan ctx.allRefs<br/>directly inside FBR func range,<br/>register new .rdata targets]
+        L4D --> L4F[Append as XrefLayerFbr;<br/>existing entries untouched]
+        L4E --> L4F
+    end
+
+    L4Block --> N[expandSubstringTargets:<br/>'pkg.Msg.field' container reachable<br/>=> every '.'-delimited suffix reachable]
     N --> O[Final XrefResult]
 ```
+
+L4 contributes *net-new* targets that the L1/L2/L3 propagation misses — typically
+small `.text` functions reached only via FBR-discovered roots that none of pdata,
+exports, fnptr tables, or `.grfn1` callers point at. The `.grfn1` branch exists
+for completeness: when an FBR boundary lands inside `.grfn1`, the regular
+`ctx.reachable` map (built from `.text`-only func starts) has no entry for it,
+so its inner LEAs are picked up directly. In practice L1 already covers the
+entire `.grfn1` LEA surface via its own BFS, so this branch usually adds 0
+unique targets but is kept so the L4 set is symmetric across sections.
+
+`strictOnly=true` restricts L4 roots to FBR boundaries backed by strong sources
+(pdata / export / RTTI / EH) or multi-source agreement. In current builds this
+produces an identical target count to the default — every weak FBR root's
+reach is already covered by a strong-rooted FBR sibling — so the flag exists
+mainly as a precision lever for future experiments.
 
 ## Inline INT3 NOP detection
 

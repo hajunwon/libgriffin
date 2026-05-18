@@ -16,7 +16,7 @@ Deobfuscation toolkit for binaries protected by the "Griffin" obfuscation engine
 - **Inline INT3 NOP** — detect CC runs as inline constant data, convert to NOP
 - **Nullsub patching** — remove dead code patterns in obfuscated sections
 - **Binary patching** — apply all resolved results directly to the PE
-- **Layered xref trace** — reachability from `.grfn1` / PE exports / function pointer tables, with caller attribution per target
+- **Layered xref trace** — reachability from `.grfn1` (L1) / PE exports (L2) / function pointer tables (L3) / FBR-discovered roots (L4), with caller attribution per target. L4 is append-only: pulls function boundaries from `pefix::fbr` that the other layers miss and registers their `.rdata` targets without touching existing L1/L2/L3 entries
 
 ## Setup
 
@@ -91,6 +91,7 @@ include/griffin/        public headers
   jmpres.h            indirect JMP/CALL resolution
   mba.h               MBA simplification + constant propagation
   patch.h             binary patching + inline INT3 NOP + nullsub
+  xref_trace.h        layered xref reachability (L1 grfn1 / L2 export / L3 fnptr / L4 fbr)
   output.h            text/IDC output formatting
 
 src/                   implementation

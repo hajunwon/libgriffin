@@ -2,6 +2,7 @@
 #include <pefix/x86_64/disasm.h>
 #include <pefix/xrefs.h>
 #include <pefix/exports.h>
+#include <pefix/fbr.h>
 #include <cstring>
 #include <algorithm>
 #include <map>
@@ -241,6 +242,141 @@ void extendWithExportRoots(XrefResult& result, const PEFile& pe, uint64_t imageB
 
     result.uniqueTargets += (uint32_t)newTargets.size();
     result.layerTargets[XrefLayerExport] = (uint32_t)newTargets.size();
+}
+
+
+void extendWithFnPtrRoots(XrefResult& result, const PEFile& pe, uint64_t imageBase, uint32_t maxDepth) {
+    XrefGraphCtx ctx = buildXrefGraphCtx(pe, imageBase, maxDepth);
+    if (!ctx.rdataStart) return;
+
+    std::set<uint32_t> known;
+    for (auto& xr : result.xrefs) known.insert(xr.targetRVA);
+
+    std::set<std::pair<uint32_t, uint32_t>> newPairs;
+    std::set<uint32_t> newTargets;
+    std::unordered_set<uint32_t> seenRoots;
+
+    for (WORD si = 0; si < pe.numSections; si++) {
+        if (pe.sections[si].Characteristics & 0x20000000) continue;
+        char nm[9] = {}; memcpy(nm, pe.sections[si].Name, 8);
+        if (strcmp(nm, ".rdata") != 0 && strcmp(nm, ".data") != 0) continue;
+
+        uint32_t secStart = pe.sections[si].VirtualAddress;
+        uint32_t secSize = pe.sections[si].Misc.VirtualSize;
+        uint32_t raw = pe.sections[si].PointerToRawData;
+        if (raw + secSize > pe.data.size()) continue;
+
+        for (uint32_t off = 0; off + 8 <= secSize; off += 8) {
+            uint64_t val = *(uint64_t*)(pe.data.data() + raw + off);
+            if (val < imageBase) continue;
+            uint32_t fnRVA = (uint32_t)(val - imageBase);
+            if (fnRVA < ctx.textStart || fnRVA >= ctx.textEnd) continue;
+
+            // Slot must point exactly to a known function start (pdata-derived),
+            // otherwise it's a code address but not necessarily a callable target.
+            uint32_t fn = ctx.findFunc(fnRVA);
+            if (fn != fnRVA) continue;
+            if (!seenRoots.insert(fnRVA).second) continue;
+
+            auto it = ctx.reachable.find(fn);
+            if (it == ctx.reachable.end()) continue;
+
+            uint32_t slotRVA = secStart + off;
+            for (uint32_t rva : it->second) {
+                if (known.count(rva)) continue;
+                newTargets.insert(rva);
+                newPairs.insert({slotRVA, rva});
+            }
+        }
+    }
+
+    for (auto& [src, tgt] : newPairs)
+        result.xrefs.push_back({src, tgt, imageBase + tgt, XrefLayerFnPtr});
+
+    result.uniqueTargets += (uint32_t)newTargets.size();
+    result.layerTargets[XrefLayerFnPtr] = (uint32_t)newTargets.size();
+}
+
+
+void extendWithFbrRoots(XrefResult& result, const PEFile& pe, uint64_t imageBase,
+                        uint32_t maxDepth, bool strictOnly) {
+    XrefGraphCtx ctx = buildXrefGraphCtx(pe, imageBase, maxDepth);
+    if (!ctx.rdataStart) return;
+
+    auto fbr = pefix::discoverFunctionBoundaries(pe, imageBase);
+    if (fbr.functions.empty()) return;
+
+    auto isStrong = [](const pefix::FunctionBoundary& f) {
+        uint16_t strongMask = pefix::SRC_PDATA | pefix::SRC_EXPORT |
+                              pefix::SRC_RTTI_VFUNC | pefix::SRC_EH_HANDLER;
+        return (f.sources & strongMask) != 0 || f.sourceCount >= 2;
+    };
+
+    // Functions already covered by L1/L2/L3 (mapped via the existing root
+    // paths). instrRVA in result.xrefs is a *call site*, not a function start —
+    // map it back to the owning function via ctx.findFunc so we can compare
+    // against FBR's startRVA list. Anything already represented here is
+    // skipped so FBR only contributes net-new roots.
+    std::unordered_set<uint32_t> knownRootFuncs;
+    knownRootFuncs.reserve(result.xrefs.size() / 4);
+    for (auto& xr : result.xrefs)
+        knownRootFuncs.insert(ctx.findFunc(xr.instrRVA));
+
+    // Existing targets — don't re-register the same target under FBR layer if
+    // some earlier root already reached it.
+    std::unordered_set<uint32_t> knownTargets;
+    knownTargets.reserve(result.uniqueTargets);
+    for (auto& xr : result.xrefs)
+        knownTargets.insert(xr.targetRVA);
+
+    std::set<std::pair<uint32_t, uint32_t>> newPairs;
+    std::set<uint32_t> newTargets;
+
+    for (auto& fb : fbr.functions) {
+        if (fb.startRVA < ctx.textStart || fb.startRVA >= ctx.textEnd) continue;
+        if (strictOnly && !isStrong(fb)) continue;
+        // Skip if this RVA is the canonical start of a function already used
+        // as a root by L1/L2/L3.
+        if (knownRootFuncs.count(fb.startRVA)) continue;
+
+        // Only consider FBR entries that the graph context recognises as a
+        // function start. ctx.reachable was populated from RIP-relative refs
+        // grouped by ctx.findFunc(...), so without an entry there's nothing
+        // to add.
+        auto it = ctx.reachable.find(fb.startRVA);
+        if (it == ctx.reachable.end()) continue;
+
+        for (uint32_t rva : it->second) {
+            if (knownTargets.count(rva)) continue;
+            newTargets.insert(rva);
+            newPairs.insert({fb.startRVA, rva});
+        }
+    }
+
+    // .grfn1 FBR functions: ctx.reachable doesn't index them (it's built from
+    // .text-only func boundaries), so use direct LEA refs inside each FBR
+    // function's [startRVA, endRVA) range. No transitive propagation —
+    // direct .rdata targets only, which keeps the contribution local and
+    // avoids the BFS-depth fragmentation that broke the earlier integration.
+    for (auto& fb : fbr.functions) {
+        if (fb.startRVA < ctx.grfnStart || fb.startRVA >= ctx.grfnEnd) continue;
+        if (strictOnly && !isStrong(fb)) continue;
+        if (fb.endRVA <= fb.startRVA) continue;
+
+        for (auto& ref : ctx.allRefs) {
+            if (ref.instrRVA < fb.startRVA || ref.instrRVA >= fb.endRVA) continue;
+            if (ref.targetRVA < ctx.rdataStart || ref.targetRVA >= ctx.rdataEnd) continue;
+            if (knownTargets.count(ref.targetRVA)) continue;
+            newTargets.insert(ref.targetRVA);
+            newPairs.insert({fb.startRVA, ref.targetRVA});
+        }
+    }
+
+    for (auto& [src, tgt] : newPairs)
+        result.xrefs.push_back({src, tgt, imageBase + tgt, (uint8_t)XrefLayerFbr});
+
+    result.uniqueTargets += (uint32_t)newTargets.size();
+    result.layerTargets[XrefLayerFbr] = (uint32_t)newTargets.size();
 }
 
 
