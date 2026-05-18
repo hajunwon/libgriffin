@@ -17,6 +17,7 @@ Deobfuscation toolkit for binaries protected by the "Griffin" obfuscation engine
 - **Nullsub patching** — remove dead code patterns in obfuscated sections
 - **Binary patching** — apply all resolved results directly to the PE
 - **Layered xref trace** — reachability from `.grfn1` (L1) / PE exports (L2) / function pointer tables (L3) / FBR-discovered roots (L4), with caller attribution per target. L4 is append-only: pulls function boundaries from `pefix::fbr` that the other layers miss and registers their `.rdata` targets without touching existing L1/L2/L3 entries
+- **PFR (jump dispatcher unroll)** — pattern-matches Griffin pop+jmp trampolines (`8F 84 24 disp32  E9 disp32`), emits a `sourceRVA -> targetRVA` alias table with transitive chase. Loose bare-E9 + CC padding pattern available behind `PfrConfig::scanJmpCCpad`
 
 ## Setup
 
@@ -92,6 +93,7 @@ include/griffin/        public headers
   mba.h               MBA simplification + constant propagation
   patch.h             binary patching + inline INT3 NOP + nullsub
   xref_trace.h        layered xref reachability (L1 grfn1 / L2 export / L3 fnptr / L4 fbr)
+  dispatch_pfr.h      jump dispatcher unroll (pop+jmp trampoline, jmp+CC padding)
   output.h            text/IDC output formatting
 
 src/                   implementation

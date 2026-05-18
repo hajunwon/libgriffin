@@ -110,6 +110,40 @@ produces an identical target count to the default — every weak FBR root's
 reach is already covered by a strong-rooted FBR sibling — so the flag exists
 mainly as a precision lever for future experiments.
 
+## PFR (jump dispatcher unroll)
+
+Griffin emits forwarder/trampoline stubs that a runtime register-indirect call
+lands on. Static analysis sees the indirect call but loses the real target.
+PFR scans selected executable sections for two patterns and emits a
+`sourceRVA -> targetRVA` table the callgraph layer can chase.
+
+```mermaid
+flowchart TD
+    A[For each executable section<br/>selected by PfrConfig] --> B[Byte sweep]
+    B --> C{Match PopJmp at pos?<br/>8F 84 24 disp32  E9 disp32}
+    C -->|Yes| C1[Record dispatcher,<br/>skip past 12 bytes]
+    C -->|No| D{cfg.scanJmpCCpad?}
+    D -->|No| B
+    D -->|Yes| E{Match [REX] E9 disp32<br/>+ CC{minPaddingLen+}?}
+    E -->|Yes| E1[Record dispatcher,<br/>skip past JMP + padding]
+    E -->|No| B
+    C1 --> F
+    E1 --> F
+    F[Sort by sourceRVA] --> G[Transitive chase<br/>follow chain up to maxChainDepth]
+    G --> H[Cycle? Drop and reset]
+    G --> I[Classify final target<br/>by section]
+```
+
+`PopJmp` is the high-precision pattern and is on by default; the pop-rsp slot
+guarantees the byte sequence is a real Griffin trampoline rather than an
+accidental E9 inside function padding. `JmpCCpad` is loose and stays off by
+default — measurement on vgc showed every match was a stray E9 in a long CC
+padding zone.
+
+Transitive chase resolves chained trampolines: if `A -> B` and `B -> C` are
+both dispatchers, `A.targetRVA` becomes `C`. Self-cycles drop back to the
+direct target and are counted in `PfrStats.cyclesDropped`.
+
 ## Inline INT3 NOP detection
 
 ```mermaid
